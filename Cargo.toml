@@ -1,0 +1,112 @@
+[package]
+name = "code_nav_devon"
+version = "0.1.0"
+edition = "2021"
+description = "A python package written in rust for code navigation features like text search, fuzzy search and go to definition/references"
+license = "MIT"
+authors = ["Arnav Chintawar arnavch04@gmail.com"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "code_nav_devon"
+crate-type = ["cdylib"]
+
+[dependencies]
+
+sha2 = "0.10.2"
+globset = "0.4"
+pyo3 = { version = "0.21.2", features = ["extension-module"] }
+
+# core
+tantivy = { version = "0.21.0", features = ["mmap"] }
+tantivy-columnar = "0.2.0"
+tokio = { version = "1.32.0", features = ["macros", "process", "rt", "rt-multi-thread", "io-std", "io-util", "sync", "fs"] }
+tokio-stream = { version = "0.1.14", features = ["sync"]}
+async-trait = "0.1.73"
+async-stream = "0.3.5"
+futures = "0.3.30"
+futures-util = "0.3.30"
+tracing = "0.1.37"
+tracing-subscriber = { version = "0.3.17", features = ["env-filter", "registry"] }
+tracing-appender = "0.2.2"
+regex = "1.9.5"
+regex-syntax = "0.6.28"
+
+
+# for debugging
+console-subscriber = { version = "0.1.10", optional = true }
+histogram = { version = "0.7.4", optional = true }
+
+# error handling
+anyhow = "1.0.75"
+thiserror = "1.0.48"
+
+# code-nav
+tree-sitter = "0.20.10"
+tree-sitter-c = "0.20.6"
+tree-sitter-go = { git = "https://github.com/tree-sitter/tree-sitter-go", rev = "05900fa" }
+tree-sitter-javascript = "0.20.1"
+tree-sitter-python = "=0.20.2"
+tree-sitter-rust = "0.20.4"
+tree-sitter-typescript = "0.20.2"
+tree-sitter-c-sharp = "0.20.0"
+tree-sitter-java = { git = "https://github.com/tree-sitter/tree-sitter-java", tag = "v0.20.0" }
+tree-sitter-cpp = { git = "https://github.com/tree-sitter/tree-sitter-cpp", rev = "5ead1e2" }
+tree-sitter-ruby = "0.20.0"
+tree-sitter-r = "0.19.5"
+tree-sitter-php = { git = "https://github.com/tree-sitter/tree-sitter-php" }
+tree-sitter-COBOL = { git = "https://github.com/BloopAI/tree-sitter-cobol" }
+petgraph = { version = "0.6.4", default-features = false, features = ["serde-1"] }
+
+# file processing
+ignore = "=0.4.20"
+hyperpolyglot = { git = "https://github.com/bloopai/hyperpolyglot" }
+blake3 = "1.5.0"
+notify-debouncer-mini = { version = "0.3.0", default-features = false }
+
+
+# doc scraper
+select = "0.6"
+tree-sitter-md = "0.1.5"
+
+# misc
+serde = "1.0.188"
+erased-serde = "0.3.31"
+smallvec = { version = "1.11.1", features = ["serde"]}
+bincode = "1.3.3"
+phf = "0.11.2"
+rand = "0.8.5"
+once_cell = "1.18.0"
+
+
+
+
+# Directly specify the version for zstd
+zstd = "=0.12.4"
+
+# Optionally, if you want to ensure zstd-safe is the correct version
+zstd-safe = "=6.0.6"
+
+zstd-sys = "=2.0.9+zstd.1.5.5"
+serde_json = "1.0.117"
+
+[dev-dependencies]
+pretty_assertions = "1.4.0"
+tempdir = "0.3.7"
+expect-test = "1.4.1"
+
+[build-dependencies]
+phf_codegen = "0.11.2"
+serde = {version = "1.0.188", features = ["derive"]}
+serde_yaml = "0.9.25"
+blake3 = "1.5.0"
+
+[package.metadata.maturin]
+name = "code_nav_devon"
+version = "0.1.0"
+description = "A python package written in rust for code navigation features like text search, fuzzy search and go to definition/references"
+author = "Arnav Chintawar <arnavch04@gmail.com>"
+license = "MIT"
+readme = "README.md"  # Make sure this file exists in the root of your project
+home-page = "https://github.com/yourusername/code_nav_devon"
+repository = "https://github.com/yourusername/code_nav_devon"
