@@ -34,6 +34,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+      - name: Set CFLAGS for powerpc64le
+        if: matrix.platform.target == 'ppc64le'
+        run: |
+          echo "CFLAGS=-std=c99" >> $GITHUB_ENV
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -45,40 +49,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-linux-${{ matrix.platform.target }}
-          path: dist
-
-  windows:
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        platform:
-          - target: x64
-          - target: x86
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-          architecture: ${{ matrix.platform.target }}
-      - name: Install MSVC Build Tools
-        run: |
-          choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --includeOptional"
-          choco install python --version 3.10
-          python -m pip install --upgrade pip
-      - name: Set up MSVC environment
-        shell: cmd
-        run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
-      - name: Build wheels
-        uses: PyO3/maturin-action@v1
-        with:
-          target: ${{ matrix.platform.target }}
-          args: --release --out dist --find-interpreter
-          sccache: 'true'
-      - name: Upload wheels
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheels-windows-${{ matrix.platform.target }}
           path: dist
 
   macos:
@@ -126,14 +96,11 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     if: "startsWith(github.ref, 'refs/tags/')"
-    needs: [linux, windows, macos, sdist]
+    needs: [linux, macos, sdist]
     steps:
       - uses: actions/download-artifact@v4
         with:
           name: wheels-linux-x86_64
-      - uses: actions/download-artifact@v4
-        with:
-          name: wheels-windows-x64
       - uses: actions/download-artifact@v4
         with:
           name: wheels-macos-x86_64
