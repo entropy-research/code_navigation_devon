@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "A python package written in rust for code navigation features like text search, fuzzy search and go to definition/references"
 license = "MIT"
-authors = ["Arnav Chintawar arnavch04@gmail.com"]
+authors = ["arnavch04@gmail.com"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
@@ -105,8 +105,8 @@ blake3 = "1.5.0"
 name = "code_nav_devon"
 version = "0.1.0"
 description = "A python package written in rust for code navigation features like text search, fuzzy search and go to definition/references"
-author = "Arnav Chintawar <arnavch04@gmail.com>"
+author = "arnavch04@gmail.com"
 license = "MIT"
 readme = "README.md"  # Make sure this file exists in the root of your project
-home-page = "https://github.com/yourusername/code_nav_devon"
-repository = "https://github.com/yourusername/code_nav_devon"
+home-page = "https://github.com/blarApp/code-base-agent/tree/main"
+repository = "https://github.com/blarApp/code-base-agent/tree/main"

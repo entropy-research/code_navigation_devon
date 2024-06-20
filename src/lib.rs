@@ -196,7 +196,7 @@ fn get_hoverable_ranges(root_path_str: &str, index_path_str: &str, relative_path
 }
 
 #[pymodule]
-fn code_nav_devon(m: &PyModule) -> PyResult<()> {
+fn code_nav_devon(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(go_to, m)?)?;
     m.add_function(wrap_pyfunction!(text_search, m)?)?;
     m.add_function(wrap_pyfunction!(fuzzy_search, m)?)?;
