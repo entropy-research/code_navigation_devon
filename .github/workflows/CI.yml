@@ -3,7 +3,6 @@
 #
 #    maturin generate-ci github
 #
-
 name: CI
 
 on:
@@ -46,7 +45,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --find-interpreter --bindings pyo3-abi3
+          args: --release --out dist --find-interpreter
           sccache: 'true'
           manylinux: auto
       - name: Upload wheels
@@ -74,7 +73,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --find-interpreter --bindings pyo3-abi3
+          args: --release --out dist --find-interpreter
           sccache: 'true'
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -116,7 +115,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           command: sdist
-          args: --out dist --bindings pyo3-abi3
+          args: --out dist
       - name: Upload sdist
         uses: actions/upload-artifact@v4
         with:
@@ -130,14 +129,6 @@ jobs:
     needs: [linux, windows, macos, sdist]
     steps:
       - uses: actions/download-artifact@v4
-        with:
-          name: wheels-linux-x86_64
-      - uses: actions/download-artifact@v4
-        with:
-          name: wheels-windows-x64
-      - uses: actions/download-artifact@v4
-        with:
-          name: wheels-macos-x86_64
       - name: Publish to PyPI
         uses: PyO3/maturin-action@v1
         env:
