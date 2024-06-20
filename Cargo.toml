@@ -15,7 +15,7 @@ crate-type = ["cdylib"]
 
 sha2 = "0.10.2"
 globset = "0.4"
-pyo3 = { version = "0.21.2", features = ["extension-module"] }
+pyo3 = { version = "0.21.2", features = ["extension-module", "abi3-py37"]}
 
 # core
 tantivy = { version = "0.21.0", features = ["mmap"] }
@@ -100,6 +100,13 @@ phf_codegen = "0.11.2"
 serde = {version = "1.0.188", features = ["derive"]}
 serde_yaml = "0.9.25"
 blake3 = "1.5.0"
+
+[build-system]
+requires = ["maturin>=0.13"]
+build-backend = "maturin"
+
+[tool.maturin]
+bindings = "pyo3-abi3"
 
 [package.metadata.maturin]
 name = "code_nav_devon"
