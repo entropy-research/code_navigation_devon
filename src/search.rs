@@ -152,6 +152,7 @@ impl Searcher {
     
         Ok(results)
     }
+    
 
     pub fn fuzzy_search(&self, query_str: &str, max_distance: u8) -> Result<Vec<SearchResult>> {
         let searcher = self.reader.searcher();
