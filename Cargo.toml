@@ -1,6 +1,6 @@
 [package]
 name = "code_nav_devon"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "A python package written in rust for code navigation features like text search, fuzzy search and go to definition/references"
 license = "MIT"
@@ -110,7 +110,7 @@ bindings = "pyo3-abi3"
 
 [package.metadata.maturin]
 name = "code_nav_devon"
-version = "0.1.0"
+version = "0.1.1"
 description = "A python package written in rust for code navigation features like text search, fuzzy search and go to definition/references"
 author = "arnavch04@gmail.com"
 license = "MIT"
