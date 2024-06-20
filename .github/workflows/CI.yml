@@ -34,10 +34,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-      - name: Set CFLAGS for powerpc64le
-        if: matrix.platform.target == 'ppc64le'
+      - name: Set CFLAGS for specific targets
         run: |
-          echo "CFLAGS=-std=c99" >> $GITHUB_ENV
+          if [[ ${{ matrix.platform.target }} == "ppc64le" || ${{ matrix.platform.target }} == "aarch64" || ${{ matrix.platform.target }} == "armv7" ]]; then
+            echo "CFLAGS=-std=c99" >> $GITHUB_ENV
+          fi
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -49,32 +50,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-linux-${{ matrix.platform.target }}
-          path: dist
-
-  macos:
-    runs-on: ${{ matrix.platform.runner }}
-    strategy:
-      matrix:
-        platform:
-          - runner: macos-latest
-            target: x86_64
-          - runner: macos-14
-            target: aarch64
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-      - name: Build wheels
-        uses: PyO3/maturin-action@v1
-        with:
-          target: ${{ matrix.platform.target }}
-          args: --release --out dist --find-interpreter
-          sccache: 'true'
-      - name: Upload wheels
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheels-macos-${{ matrix.platform.target }}
           path: dist
 
   sdist:
@@ -96,14 +71,11 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     if: "startsWith(github.ref, 'refs/tags/')"
-    needs: [linux, macos, sdist]
+    needs: [linux, sdist]
     steps:
       - uses: actions/download-artifact@v4
         with:
           name: wheels-linux-x86_64
-      - uses: actions/download-artifact@v4
-        with:
-          name: wheels-macos-x86_64
       - name: Publish to PyPI
         uses: PyO3/maturin-action@v1
         env:
