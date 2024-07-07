@@ -106,8 +106,28 @@ jobs:
           path: wheels-linux-x86_64
       - uses: actions/download-artifact@v4
         with:
+          name: wheels-linux-x86
+          path: wheels-linux-x86
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheels-linux-aarch64
+          path: wheels-linux-aarch64
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheels-linux-armv7
+          path: wheels-linux-armv7
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheels-linux-ppc64le
+          path: wheels-linux-ppc64le
+      - uses: actions/download-artifact@v4
+        with:
           name: wheels-macos-x86_64
           path: wheels-macos-x86_64
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheels-macos-aarch64
+          path: wheels-macos-aarch64
       - uses: actions/download-artifact@v4
         with:
           name: wheels-sdist
@@ -118,4 +138,4 @@ jobs:
           MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         with:
           command: upload
-          args: --non-interactive --skip-existing wheels-linux-x86_64/* wheels-macos-x86_64/* wheels-sdist/*
+          args: --non-interactive --skip-existing wheels-linux-x86_64/* wheels-linux-x86/* wheels-linux-aarch64/* wheels-linux-armv7/* wheels-linux-ppc64le/* wheels-macos-x86_64/* wheels-macos-aarch64/* wheels-sdist/*
