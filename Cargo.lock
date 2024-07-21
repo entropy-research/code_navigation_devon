@@ -344,7 +344,6 @@ dependencies = [
  "tracing-appender",
  "tracing-subscriber",
  "tree-sitter 0.20.10",
- "tree-sitter-COBOL",
  "tree-sitter-c",
  "tree-sitter-c-sharp",
  "tree-sitter-cpp",
@@ -2583,14 +2582,6 @@ dependencies = [
  "regex",
 ]
 
-[[package]]
-name = "tree-sitter-COBOL"
-version = "0.0.1"
-source = "git+https://github.com/BloopAI/tree-sitter-cobol#8ba6692cc3c2bded0693d198936c6e26e6501230"
-dependencies = [
- "cc",
- "tree-sitter 0.20.10",
-]
 
 [[package]]
 name = "tree-sitter-c"
