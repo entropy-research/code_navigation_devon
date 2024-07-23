@@ -1,4 +1,6 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use ignore::gitignore::{Gitignore, GitignoreBuilder};
+use ignore::WalkBuilder;
 use tantivy::{schema::Schema, IndexWriter, doc, Term};
 use anyhow::Result;
 use async_trait::async_trait;
@@ -11,7 +13,6 @@ use crate::intelligence::{TreeSitterFile, TSLanguage};
 use crate::symbol::SymbolLocations;
 use crate::schema::build_schema;
 use sha2::{Sha256, Digest};
-use globset::{Glob, GlobSet, GlobSetBuilder};
 
 pub struct File {
     pub schema: Schema,
@@ -60,13 +61,13 @@ impl File {
 impl Indexable for File {
     async fn index_repository(&self, root_path: &Path, writer: &IndexWriter) -> Result<()> {
         let existing_docs = load_existing_docs(writer, &self.hash_field, &self.path_field)?;
-        let mut gitignore = GlobSetBuilder::new();
+        let gitignore_manager = GitignoreManager::new(root_path.to_path_buf()).await?;
 
         traverse_and_index_files(
-            root_path, writer, &self.schema, self.path_field, self.content_field,
+            root_path, writer, self.path_field, self.content_field,
             self.symbol_locations_field, self.symbols_field, self.line_end_indices_field,
             self.lang_field, self.hash_field, self.content_insensitive_field, 
-            &existing_docs, &mut gitignore, root_path).await
+            &existing_docs, &gitignore_manager).await
     }
 
     fn schema(&self) -> Schema {
@@ -93,36 +94,71 @@ fn load_existing_docs(writer: &IndexWriter, hash_field: &tantivy::schema::Field,
     Ok(existing_docs)
 }
 
-async fn parse_gitignore(current_path: &Path, builder: &mut GlobSetBuilder) -> Result<()> {
-    let gitignore_path = current_path.join(".gitignore");
-
-    if gitignore_path.exists() {
-        let contents = tokio::fs::read_to_string(&gitignore_path).await?;
-        for line in contents.lines() {
-            let trimmed_line = line.trim();
-            if !trimmed_line.starts_with('#') && !trimmed_line.is_empty() {
-                let absolute_pattern = if trimmed_line.starts_with('/') {
-                    // The pattern is already an absolute path, so we just use it as is
-                    current_path.join(trimmed_line.trim_start_matches('/'))
-                } else {
-                    // The pattern is a relative path, so we join it with the current path
-                    current_path.join(trimmed_line)
-                };
-                let pattern = absolute_pattern.to_string_lossy().replace("\\", "/");
-                // println!("Adding to gitignore: {}", pattern);
-                builder.add(Glob::new(&pattern)?);
-            }
-        }
-    }
-
-    Ok(())
+struct GitignoreManager {
+    root_path: PathBuf,
+    gitignores: Vec<(PathBuf, Gitignore)>,
 }
 
+impl GitignoreManager {
+    async fn new(root_path: PathBuf) -> Result<Self> {
+        let mut manager = GitignoreManager {
+            root_path,
+            gitignores: Vec::new(),
+        };
+        manager.load_gitignores().await?;
+        Ok(manager)
+    }
+
+    async fn load_gitignores(&mut self) -> Result<()> {
+        let walk = WalkBuilder::new(&self.root_path)
+            .hidden(false)
+            .git_ignore(false)
+            .build();
+
+        for entry in walk {
+            let entry = entry?;
+            let path = entry.path();
+            if path.file_name() == Some(".gitignore".as_ref()) {
+                let gitignore_dir = path.parent().unwrap().to_path_buf();
+                let mut builder = GitignoreBuilder::new(&gitignore_dir);
+                builder.add(path);
+                match builder.build() {
+                    Ok(gitignore) => {
+                        self.gitignores.push((gitignore_dir, gitignore));
+                    },
+                    Err(err) => {
+                        eprintln!("Error building gitignore for {:?}: {}", path, err);
+                        // Optionally, you can choose to return the error or continue
+                        // return Err(err.into());
+                    }
+                }
+            }
+        }
+
+        // Sort gitignores from most specific (deepest) to least specific (root)
+        self.gitignores.sort_by(|a, b| b.0.components().count().cmp(&a.0.components().count()));
+
+        Ok(())
+    }
+
+    fn is_ignored(&self, path: &Path) -> bool {
+        for (dir, gitignore) in &self.gitignores {
+            if path.starts_with(dir) {
+                let relative_path = path.strip_prefix(dir).unwrap();
+                match gitignore.matched(relative_path, false) {
+                    ignore::Match::Ignore(_) => return true,
+                    ignore::Match::Whitelist(_) => return false,
+                    ignore::Match::None => continue,
+                }
+            }
+        }
+        false
+    }
+}
 
 fn traverse_and_index_files<'a>(
     path: &'a Path,
     writer: &'a IndexWriter,
-    schema: &'a Schema,
     path_field: tantivy::schema::Field,
     content_field: tantivy::schema::Field,
     symbol_locations_field: tantivy::schema::Field,
@@ -130,36 +166,24 @@ fn traverse_and_index_files<'a>(
     line_end_indices_field: tantivy::schema::Field,
     lang_field: tantivy::schema::Field,
     hash_field: tantivy::schema::Field,
-    content_insensitive_field: tantivy::schema::Field,  // New field
+    content_insensitive_field: tantivy::schema::Field,
     existing_docs: &'a HashMap<String, String>,
-    gitignore: &'a mut GlobSetBuilder,
-    root_path: &'a Path,
+    gitignore_manager: &'a GitignoreManager,
 ) -> BoxFuture<'a, Result<()>> {
     Box::pin(async move {
-        // Parse .gitignore in the current directory and update the builder
-        parse_gitignore(path, gitignore).await?;
-
-        // Build the GlobSet from the builder
-        let globset = gitignore.build()?;
-
         let mut entries = fs::read_dir(path).await?;
         while let Some(entry) = entries.next_entry().await? {
             let path = entry.path();
-
-            // Convert the path to an absolute path
-            let absolute_path = path.canonicalize()?;
-            let absolute_path_str = absolute_path.to_string_lossy().replace("\\", "/");
-
-            // Skip paths that match .gitignore patterns
-            if globset.is_match(&absolute_path_str) {
+    
+            if gitignore_manager.is_ignored(&path) {
                 continue;
             }
-
-            if path.is_dir() {
+    
+            if path.is_dir() {                
                 traverse_and_index_files(
-                    &path, writer, schema, path_field, content_field, symbol_locations_field,
+                    &path, writer, path_field, content_field, symbol_locations_field,
                     symbols_field, line_end_indices_field, lang_field, hash_field, content_insensitive_field, 
-                    existing_docs, gitignore, root_path).await?;
+                    existing_docs, gitignore_manager).await?;
             } else if path.is_file() {
                 let path_clone = path.clone();
                 let content = spawn_blocking(move || std::fs::read(&path_clone)).await??;
@@ -173,6 +197,9 @@ fn traverse_and_index_files<'a>(
                 let mut hasher = Sha256::new();
                 hasher.update(&content_str);
                 let hash = format!("{:x}", hasher.finalize());
+                
+                let absolute_path = path.canonicalize()?;
+                let absolute_path_str = absolute_path.to_string_lossy().replace("\\", "/");
 
                 let path_str = absolute_path_str.clone();
                     if let Some(existing_hash) = existing_docs.get(&path_str) {
@@ -224,7 +251,7 @@ fn traverse_and_index_files<'a>(
                 // Convert content to lower case for case-insensitive search
                 let content_insensitive = content_str.to_lowercase();
 
-                // println!("{}", absolute_path_str);
+                println!("{}", absolute_path_str);
 
                 let doc = tantivy::doc!(
                     path_field => path_str,

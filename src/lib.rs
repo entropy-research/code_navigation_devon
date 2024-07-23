@@ -15,7 +15,7 @@ use std::path::Path;
 pub use file::File;
 pub use indexes::{Indexes, Indexable};
 pub use repository::Repository;
-use search::Searcher;
+pub use search::Searcher;
 pub use sync_handle::SyncHandle;
 
 use pyo3::prelude::*;
